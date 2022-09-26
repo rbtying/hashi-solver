@@ -106,8 +106,12 @@ class TestPage extends React.Component {
         cv.imshow(this.tmpImgRef.current, vsmall); 
         const dataURL = this.tmpImgRef.current.toDataURL("image/png");
         const text = await this.worker.recognize(dataURL);
-        const v = text.data.text.replace('(', '').replace(')', '').trim();
-        values.push({x, y, v});
+        const v = (text.data.text.match(/\d+/) || [])[0] || '';
+
+        console.log(v);
+        if (v !== '') {
+          values.push({x, y, v});
+        }
         smaller.delete();
         vsmall.delete();
       }
