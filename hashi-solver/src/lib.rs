@@ -103,7 +103,7 @@ pub struct Board {
 }
 
 impl Board {
-    pub fn parse(s: &str) -> Self {
+    pub fn parse(s: &str) -> Result<Self, &'static str> {
         let mut nodes = vec![];
         for (y, line) in s.lines().enumerate() {
             for (x, c) in line.chars().enumerate() {
@@ -112,10 +112,12 @@ impl Board {
                         n: n as u8,
                         pos: (x, y),
                     });
+                } else if c != ' ' {
+                    return Err("unexpected character (only expected 1-8)");
                 }
             }
         }
-        Self::new(nodes)
+        Ok(Self::new(nodes))
     }
 
     pub fn new(mut nodes: Vec<Node>) -> Self {
@@ -268,7 +270,7 @@ impl<'b> SolveState<'b> {
         self.node_counts[n2] += 1;
     }
 
-    fn remove_edge(&mut self, edge: usize, reason: &'static str) {
+    fn remove_edge(&mut self, edge: usize) {
         let idx = self.soln.iter().rposition(|v| *v == edge).unwrap();
         self.soln.remove(idx);
         self.log.remove(idx);
@@ -519,36 +521,32 @@ impl<'b> SolveState<'b> {
         None
     }
 
-    fn num_edges(&self) -> usize {
-        let mut sum = 0;
-        for edge_count in &self.edge_counts {
-            sum += match edge_count {
-                NumEdges::One => 1,
-                NumEdges::Two => 2,
-                NumEdges::None => 0,
-            };
-        }
-        sum
-    }
-
-    pub fn solve(&mut self) -> Result<(Vec<usize>, Vec<&'static str>), &'static str> {
+    pub fn solve(
+        &mut self,
+        max_depth: usize,
+        max_visited: usize,
+    ) -> Result<(Vec<usize>, Vec<&'static str>), &'static str> {
         if self.solved() {
             return Ok((self.soln.clone(), self.log.clone()));
         }
-        if self.visited.contains(&self.edge_counts) {
-            return Err("already visited");
+        if self.depth > max_depth {
+            return Err("max depth exceeded");
         }
 
-        self.visited.insert(self.edge_counts.clone());
         self.solvable()?;
 
         if let Some((idx, reason)) = self.solve_fully_constrained() {
             self.add_edge(idx, reason);
-            let ret = self.solve();
+            let ret = self.solve(max_depth, max_visited);
             match ret {
                 Ok(ret) => return Ok(ret),
-                Err(err) => self.remove_edge(idx, err),
+                Err(_) => self.remove_edge(idx),
             }
+        }
+
+        self.visited.insert(self.edge_counts.clone());
+        if self.visited.len() > max_visited {
+            return Err("max visited state count exceeded");
         }
 
         for idx in self.find_next_edges() {
@@ -564,11 +562,11 @@ impl<'b> SolveState<'b> {
                 self.depth,
                 self.board.serialize_to_string(self.soln.iter().copied()),
             );
-            let ret = self.solve();
+            let ret = self.solve(max_depth, max_visited);
             match ret {
                 Ok(ret) => return Ok(ret),
                 Err(err) => {
-                    self.remove_edge(idx, err);
+                    self.remove_edge(idx);
                     eprintln!(
                         "removing edge {} because {}\n{}",
                         idx,
@@ -734,29 +732,16 @@ mod tests {
 
     #[test]
     fn test_easy_7x7() {
-        let b = Board::parse(EASY_7X7);
-        let (soln, log) = SolveState::new(&b).solve().unwrap();
-
-        for i in 0..soln.len() {
-            eprintln!("{}", log[i]);
-            eprintln!("{}", b.serialize_to_string(soln.iter().copied().take(i)));
-            eprintln!();
-        }
+        let b = Board::parse(EASY_7X7).unwrap();
+        SolveState::new(&b).solve(0, 0).unwrap();
 
         assert_eq!(b.serialize_to_string(soln.iter().copied()), EASY_7X7_SOLN);
     }
 
     #[test]
     fn test_hard_25x25() {
-        let b = Board::parse(HARD_25X25);
-        let (soln, log) = SolveState::new(&b).solve().unwrap();
-
-        for i in 0..soln.len() {
-            eprintln!("{}", log[i]);
-            eprintln!("{}", b.serialize_to_string(soln.iter().copied().take(i)));
-            eprintln!();
-        }
-
+        let b = Board::parse(HARD_25X25).unwrap();
+        SolveState::new(&b).solve(0, 0).unwrap();
         assert_eq!(b.serialize_to_string(soln.iter().copied()), HARD_25X25_SOLN);
     }
 

@@ -1,5 +1,5 @@
 import React from "react";
-import Tesseract from 'tesseract.js';
+import Tesseract from "tesseract.js";
 import cv from "@techstark/opencv-js";
 import { solve } from "hashi-solver-wasm";
 import "./style.css";
@@ -12,23 +12,30 @@ class TestPage extends React.Component {
     this.inputImgRef = React.createRef();
     this.dstImgRef = React.createRef();
     this.tmpImgRef = React.createRef();
+    let initialized = false;
+
+    try {
+      const v = new cv.Mat();
+      v.delete();
+      initialized = true;
+    } catch (e) {}
+
     this.state = {
       imgUrl: process.env.PUBLIC_URL + "/example.png",
-      initialized: false,
-      text: '',
+      initialized,
+      text: "",
       solving: false,
-      soln: '',
+      soln: "",
     };
 
-    cv['onRuntimeInitialized']= () => {
-      console.log("runtime initialized");
-      this.setState({...this.state, "initialized": true});
-    }
+    cv["onRuntimeInitialized"] = () => {
+      this.setState({ ...this.state, initialized: true });
+    };
   }
 
   componentDidMount() {
     this.worker = Tesseract.createWorker({
-      logger: m => {},
+      logger: (m) => {},
     });
   }
 
@@ -50,39 +57,76 @@ class TestPage extends React.Component {
 
     let contours = new cv.MatVector();
     let hierarchy = new cv.Mat();
-    // You can try more different parameters
-    cv.findContours(thresholded, contours, hierarchy, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE);
+    cv.findContours(
+      thresholded,
+      contours,
+      hierarchy,
+      cv.RETR_TREE,
+      cv.CHAIN_APPROX_SIMPLE
+    );
     // draw contours with random Scalar
     const dst = cv.Mat.zeros(img.rows, img.cols, cv.CV_8UC1);
 
     for (let i = 0; i < contours.size(); ++i) {
       const rect = cv.boundingRect(contours.get(i));
       const area = rect.width * rect.height;
-      if (rect.width > 10 && rect.height > 10 && area > 100 && area < (img.rows * img.cols / 10)) {
-          cv.rectangle(dst, new cv.Point(rect.x + 1, rect.y + 1), new cv.Point(rect.x+rect.width - 2, rect.y+rect.height - 2), new cv.Scalar(255), cv.FILLED);
-        }
+      const margin = 3;
+      if (
+        rect.width > 10 &&
+        rect.height > 10 &&
+        area > 100 &&
+        area < (img.rows * img.cols) / 10
+      ) {
+        cv.rectangle(
+          dst,
+          new cv.Point(rect.x + margin, rect.y + margin),
+          new cv.Point(
+            rect.x + rect.width - 2 * margin,
+            rect.y + rect.height - 2 * margin
+          ),
+          new cv.Scalar(255),
+          cv.FILLED
+        );
+      }
     }
 
     let contours2 = new cv.MatVector();
     let hierarchy2 = new cv.Mat();
     // You can try more different parameters
-    cv.findContours(dst, contours2, hierarchy2, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE);
+    cv.findContours(
+      dst,
+      contours2,
+      hierarchy2,
+      cv.RETR_TREE,
+      cv.CHAIN_APPROX_SIMPLE
+    );
 
     const rectangles = [];
     const indices = [];
 
-    const dst2 = cv.Mat.zeros(img.rows, img.cols, cv.CV_8UC1);
+    const dst2 = cv.Mat.zeros(img.rows, img.cols, cv.CV_8UC4);
     for (let i = 0; i < contours2.size(); ++i) {
       const rect = cv.boundingRect(contours2.get(i));
       indices.push(i);
       rectangles.push(rect);
-      cv.rectangle(dst2, new cv.Point(rect.x, rect.y), new cv.Point(rect.x+rect.width, rect.y+rect.height), new cv.Scalar(255), 1);
+      // cv.rectangle(
+      //   dst2,
+      //   new cv.Point(rect.x, rect.y),
+      //   new cv.Point(rect.x + rect.width, rect.y + rect.height),
+      //   new cv.Scalar(255),
+      //   1
+      // );
     }
 
     cv.imshow(this.dstImgRef.current, dst2);
 
     const overlap = (r1, r2) => {
-      return !(r1.x + r1.width < r2.x || r2.x + r2.width < r1.x || r1.y + r1.height < r2.y || r2.y + r2.height < r1.y);
+      return !(
+        r1.x + r1.width < r2.x ||
+        r2.x + r2.width < r1.x ||
+        r1.y + r1.height < r2.y ||
+        r2.y + r2.height < r1.y
+      );
     };
 
     const values = [];
@@ -99,25 +143,20 @@ class TestPage extends React.Component {
       }
       if (!skip) {
         const smaller = img.roi(rect);
+        smaller.copyTo(dst2.roi(rect));
+
+        cv.imshow(this.dstImgRef.current, dst2);
         const x = rect.x;
         const y = rect.y;
-        const vsmall = new cv.Mat();
-        cv.resize(smaller, vsmall, new cv.Size(15, 15), 0, 0, cv.INTER_AREA);
-        cv.imshow(this.tmpImgRef.current, vsmall); 
+
+        cv.imshow(this.tmpImgRef.current, smaller);
         const dataURL = this.tmpImgRef.current.toDataURL("image/png");
         const text = await this.worker.recognize(dataURL);
-        const v = (text.data.text.match(/\d+/) || [])[0] || '';
-
-        console.log(v);
-        if (v !== '') {
-          values.push({x, y, v});
-        }
+        const v = (text.data.text.match(/\d+/) || [])[0] || "?";
+        values.push({ x, y, v });
         smaller.delete();
-        vsmall.delete();
       }
     }
-
-    console.log(values);
 
     let uniq_x = [];
     let uniq_y = [];
@@ -136,19 +175,19 @@ class TestPage extends React.Component {
 
     let min_delta_x = Number.MAX_VALUE;
     for (let i = 1; i < uniq_x.length; ++i) {
-      const delta = uniq_x[i] - uniq_x[i-1];
+      const delta = uniq_x[i] - uniq_x[i - 1];
       min_delta_x = Math.min(delta, min_delta_x);
     }
 
     let min_delta_y = Number.MAX_VALUE;
     for (let i = 1; i < uniq_y.length; ++i) {
-      const delta = uniq_y[i] - uniq_y[i-1];
+      const delta = uniq_y[i] - uniq_y[i - 1];
       min_delta_y = Math.min(delta, min_delta_y);
     }
 
     let xs = [uniq_x[0]];
     for (let i = 1; i < uniq_x.length; ++i) {
-      const delta = uniq_x[i] - uniq_x[i-1];
+      const delta = uniq_x[i] - uniq_x[i - 1];
       let num_steps = Math.round(delta / min_delta_x);
       while (num_steps > 1) {
         xs.push(-1);
@@ -159,7 +198,7 @@ class TestPage extends React.Component {
 
     let ys = [uniq_y[0]];
     for (let i = 1; i < uniq_y.length; ++i) {
-      const delta = uniq_y[i] - uniq_y[i-1];
+      const delta = uniq_y[i] - uniq_y[i - 1];
       let num_steps = Math.round(delta / min_delta_y);
       while (num_steps > 1) {
         ys.push(-1);
@@ -172,7 +211,7 @@ class TestPage extends React.Component {
     for (let i = 0; i < ys.length; ++i) {
       arr[i] = [];
       for (let j = 0; j < xs.length; ++j) {
-        arr[i][j] = ' ';
+        arr[i][j] = " ";
       }
     }
 
@@ -183,7 +222,7 @@ class TestPage extends React.Component {
       arr[y][x] = v.v;
     }
 
-    const str = arr.map((r) => r.join('')).join('\n');
+    const str = arr.map((r) => r.join("")).join("\n");
 
     // need to release them manually
     img.delete();
@@ -202,11 +241,11 @@ class TestPage extends React.Component {
     if (this.state.solving) {
       return;
     }
-    this.setState({...this.state, solving: true });
-    console.log("Starting solver...");
-    const soln = solve(this.state.text);
-    console.log(soln);
-    this.setState({...this.state, soln, solving: false });
+    this.setState({ ...this.state, solving: true });
+
+    const soln = solve(this.state.text, 3);
+
+    this.setState({ ...this.state, soln, solving: false });
   }
 
   render() {
@@ -228,6 +267,10 @@ class TestPage extends React.Component {
               }
             }}
           />
+          <span>
+            from puzzle-bridges.com, select "Share", and then get the "progress
+            screenshot"
+          </span>
         </div>
         {!initialized && <p>Not initialized!</p>}
 
@@ -238,27 +281,61 @@ class TestPage extends React.Component {
               <img
                 alt="Original input"
                 src={imgUrl}
+                style={{ display: "none" }}
                 onLoad={(e) => {
                   this.processImage(e.target);
                 }}
               />
+              <img
+                alt="Original input"
+                src={imgUrl}
+                style={{ maxHeight: "450px", maxWidth: "450px" }}
+              />
             </div>
 
             <div className="image-card">
-              <div style={{ margin: "10px" }}>
-                ↓↓↓ dst Result ↓↓↓
-              </div>
-              <canvas ref={this.dstImgRef} />
+              <div style={{ margin: "10px" }}>↓↓↓ dst Result ↓↓↓</div>
+              <canvas
+                ref={this.dstImgRef}
+                style={{ maxHeight: "450px", maxWidth: "450px" }}
+              />
             </div>
             <div className="image-card">
-              <div style={{ margin: "10px" }}>
-                ↓↓↓ Recognized text ↓↓↓
-              </div>
-              <pre>{this.state.text}</pre>
-              <button onClick={() => this.runSolve()}>Solve</button>
+              <div style={{ margin: "10px" }}>↓↓↓ Recognized text ↓↓↓</div>
+              <pre>
+                <textarea
+                  value={this.state.text}
+                  rows={30}
+                  cols={30}
+                  onChange={(evt) =>
+                    this.setState({ ...this.state, text: evt.target.value })
+                  }
+                />
+              </pre>
+              <canvas ref={this.tmpImgRef} style={{ display: "none" }} />
+              {this.state.text.indexOf("?") >= 0 && (
+                <p>
+                  The <code>?</code> are most likely <code>8</code>s; the
+                  recognition isn't perfect on those. Click{" "}
+                  <button
+                    onClick={(_) => {
+                      this.setState({
+                        ...this.state,
+                        text: this.state.text.replace("?", "8"),
+                      });
+                    }}
+                  >
+                    here
+                  </button>{" "}
+                  to replace <code>?</code> with <code>8</code>
+                </p>
+              )}
+            </div>
+            <div className="image-card">
+              <div style={{ margin: "10px" }}>↓↓↓ Solution ↓↓↓</div>
+              <button onClick={() => this.runSolve()}>Try to solve</button>
               {this.state.solving && <p>...</p>}
               <pre>{this.state.soln}</pre>
-              <canvas ref={this.tmpImgRef} style={{display: "none"}}/>
             </div>
           </div>
         )}

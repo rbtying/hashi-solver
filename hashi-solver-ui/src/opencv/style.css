@@ -14,6 +14,4 @@
 
 .image-card img,
 .image-card canvas {
-  max-width: 400px;
-  max-height: 400px;
 }
