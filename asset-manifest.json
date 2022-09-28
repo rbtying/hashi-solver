@@ -1,16 +1,16 @@
 {
   "files": {
-    "main.css": "/hashi-solver/static/css/main.721be419.css",
-    "main.js": "/hashi-solver/static/js/main.33e8a4e8.js",
-    "static/js/787.70b80a4e.chunk.js": "/hashi-solver/static/js/787.70b80a4e.chunk.js",
-    "module.wasm": "/hashi-solver/74fa2b5bfed4301a8bbd.module.wasm",
-    "index.html": "/hashi-solver/index.html",
-    "main.721be419.css.map": "/hashi-solver/static/css/main.721be419.css.map",
-    "main.33e8a4e8.js.map": "/hashi-solver/static/js/main.33e8a4e8.js.map",
-    "787.70b80a4e.chunk.js.map": "/hashi-solver/static/js/787.70b80a4e.chunk.js.map"
+    "main.css": "https://rbtying.github.io/hashi-solver/static/css/main.721be419.css",
+    "main.js": "https://rbtying.github.io/hashi-solver/static/js/main.1b7d6a53.js",
+    "static/js/787.70b80a4e.chunk.js": "https://rbtying.github.io/hashi-solver/static/js/787.70b80a4e.chunk.js",
+    "module.wasm": "https://rbtying.github.io/hashi-solver/74fa2b5bfed4301a8bbd.module.wasm",
+    "index.html": "https://rbtying.github.io/hashi-solver/index.html",
+    "main.721be419.css.map": "https://rbtying.github.io/hashi-solver/static/css/main.721be419.css.map",
+    "main.1b7d6a53.js.map": "https://rbtying.github.io/hashi-solver/static/js/main.1b7d6a53.js.map",
+    "787.70b80a4e.chunk.js.map": "https://rbtying.github.io/hashi-solver/static/js/787.70b80a4e.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.721be419.css",
-    "static/js/main.33e8a4e8.js"
+    "static/js/main.1b7d6a53.js"
   ]
 }
