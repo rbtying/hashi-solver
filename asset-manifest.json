@@ -1,16 +1,16 @@
 {
   "files": {
-    "main.css": "/static/css/main.721be419.css",
-    "main.js": "/static/js/main.adf29cab.js",
-    "static/js/787.70b80a4e.chunk.js": "/static/js/787.70b80a4e.chunk.js",
-    "module.wasm": "/74fa2b5bfed4301a8bbd.module.wasm",
-    "index.html": "/index.html",
-    "main.721be419.css.map": "/static/css/main.721be419.css.map",
-    "main.adf29cab.js.map": "/static/js/main.adf29cab.js.map",
-    "787.70b80a4e.chunk.js.map": "/static/js/787.70b80a4e.chunk.js.map"
+    "main.css": "/hashi-solver/static/css/main.721be419.css",
+    "main.js": "/hashi-solver/static/js/main.33e8a4e8.js",
+    "static/js/787.70b80a4e.chunk.js": "/hashi-solver/static/js/787.70b80a4e.chunk.js",
+    "module.wasm": "/hashi-solver/74fa2b5bfed4301a8bbd.module.wasm",
+    "index.html": "/hashi-solver/index.html",
+    "main.721be419.css.map": "/hashi-solver/static/css/main.721be419.css.map",
+    "main.33e8a4e8.js.map": "/hashi-solver/static/js/main.33e8a4e8.js.map",
+    "787.70b80a4e.chunk.js.map": "/hashi-solver/static/js/787.70b80a4e.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.721be419.css",
-    "static/js/main.adf29cab.js"
+    "static/js/main.33e8a4e8.js"
   ]
 }
