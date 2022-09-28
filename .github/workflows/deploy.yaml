@@ -12,6 +12,9 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./hashi-solver-ui
     
     steps:
     - name: Checkout code
@@ -36,7 +39,11 @@ jobs:
     name: Deploy
     needs: build
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    defaults:
+      run:
+        working-directory: ./hashi-solver-ui
+        
+    if: github.ref == 'refs/heads/master'
     
     steps:
     - name: Download artifact
